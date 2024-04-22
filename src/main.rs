@@ -1,3 +1,10 @@
+use pest::Parser;
+use pest_derive::Parser;
+
+#[derive(Parser)]
+#[grammar = "grammar.pest"]
+pub struct MyParser;
+
 fn main() {
-    println!("Hello, world!");
+    dbg!(MyParser::parse(Rule::init, "abc"));
 }

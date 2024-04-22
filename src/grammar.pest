@@ -1,0 +1,5 @@
+instruction = { ("abc" | "")}
+
+WHITE_SPACE = { " " }
+
+init = _{ SOI ~ (instruction ~ NEWLINE)* ~ instruction? ~ EOI }
