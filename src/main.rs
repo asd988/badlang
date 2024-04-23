@@ -112,7 +112,6 @@ fn create_program(from: &str) -> Program {
                 program.instructions.push(Instruction::Delete(identifier));
             },
             Rule::print => {
-                println!("print {:?}", pair);
                 let mut pairs: pest::iterators::Pairs<'_, Rule> = pair.into_inner();
                 let value = get_value(pairs.next().unwrap());
                 if let Some(text) = pairs.next() {
