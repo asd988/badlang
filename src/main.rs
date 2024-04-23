@@ -3,19 +3,43 @@ use std::collections::HashMap;
 use pest::Parser;
 use pest_derive::Parser;
 
+#[cfg(test)]
+mod test;
+
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
 pub struct MyParser;
 
-
-
-#[derive(Default)]
-struct Program {
+pub struct Program {
     instructions: Vec<Instruction>,
     variables: HashMap<String, i64>,
     tags: HashMap<String, Tag>,
     call_stack: Vec<usize>,
     next_instruction: usize,
+    stdout_function: Box<dyn FnMut(String) -> ()>,
+}
+
+impl Default for Program {
+    fn default() -> Self {
+        Program {
+            instructions: Vec::new(),
+            variables: HashMap::new(),
+            tags: HashMap::new(),
+            call_stack: Vec::new(),
+            next_instruction: 0,
+            stdout_function: Box::new(|text| println!("{}", text))
+        }
+    }
+}
+
+impl Program {
+    #[allow(unused)]
+    fn with_stdout(stdout_function: impl FnMut(String) -> () + 'static) -> Self {
+        Program {
+            stdout_function: Box::new(stdout_function),
+            ..Default::default()
+        }
+    }
 }
 
 enum Tag {
@@ -64,10 +88,12 @@ fn main() {
     println!("execution: {:?}", instant.elapsed());
 }
 
-fn create_program(from: &str) -> Program {
-    let result = MyParser::parse(Rule::init, from).unwrap();
+pub fn create_program(from: &str) -> Program {
+    compile_from_str(from, Program::default())
+}
 
-    let mut program = Program::default();
+pub fn compile_from_str(from: &str, mut program: Program) -> Program {
+    let result = MyParser::parse(Rule::init, from).unwrap();
 
     for pair in result {
         match pair.as_rule() {
@@ -164,7 +190,7 @@ fn get_value(pair: pest::iterators::Pair<Rule>) -> Value {
 }
 
 impl Program {
-    fn run(mut self) {
+    fn run(mut self) -> Program {
         loop {
             let current = self.next_instruction;
             self.next_instruction += 1;
@@ -172,6 +198,7 @@ impl Program {
                 break;
             }
         }
+        self
     }
 
     fn execute_instrucion(&mut self, ix: usize) -> bool {
@@ -224,10 +251,11 @@ impl Program {
                 self.variables.remove(identifier);
             },
             Instruction::Print(value, text) => {
+                let value = self.get_from_value(value);
                 if let Some(text) = text {
-                    println!("{} {}", self.get_from_value(value), text);
+                    (self.stdout_function)(format!("{} {}", value, text));
                 } else {
-                    println!("{}", self.get_from_value(value));
+                    (self.stdout_function)(format!("{}", value));
                 }
             },
             Instruction::Jump(tag, value) => {
