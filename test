@@ -1,9 +1,0 @@
-aaa=1
-
-aaa+=2
-
-other=3
-
-aaa*=other
-
-<aaa

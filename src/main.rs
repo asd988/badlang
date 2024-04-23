@@ -52,8 +52,11 @@ enum Instruction {
 }
 
 fn main() {
-    println!("asd");
-    create_program("a = -10\na += 15\n< a").run();
+    // read "test" file
+    let input = std::fs::read_to_string("test.txt").unwrap();
+
+    //create_program("a = -10\na+= 15\n< a\n").run();
+    create_program(&input).run();
 }
 
 fn create_program(from: &str) -> Program {
