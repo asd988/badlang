@@ -4,22 +4,22 @@ not_newline = @{ !("\n" | "\r")+ }
 
 value = _{ number | identifier }
 
-instruction = _{ declaration | print | add | sub | mul | div | mod | max | min | invert | del | tag | stacked_tag | return | jump }
+instruction = _{ declaration | print | add | sub | mul | div | modulus | max | min | invert | delete | tag | stacked_tag | return | jump }
     declaration = { identifier ~ "=" ~ value }
-    print = { "<" ~ value ~ ("," ~ not_newline)? }
     add = { identifier ~ "+=" ~ value }
     sub = { identifier ~ "-=" ~ value }
     mul = { identifier ~ "*=" ~ value }
     div = { identifier ~ "/=" ~ value }
-    mod = { identifier ~ "%=" ~ value }
+    modulus = { identifier ~ "%=" ~ value }
     max = { identifier ~ "max=" ~ value }
     min = { identifier ~ "min=" ~ value }
     invert = { identifier ~ "invert" }
-    del = { identifier ~ "delete" }
+    delete = { identifier ~ "delete" }
+    print = { "<" ~ value ~ ("," ~ not_newline)? }
+    jump = { "jmp" ~ identifier ~ ("if" ~ value)? }
+    return = { "return" }
     tag = { "@" ~ identifier }  
     stacked_tag = { "@@" ~ identifier }  
-    return = { "return" }
-    jump = { "jmp" ~ identifier ~ ("if" ~ value)? }
 
 
 
