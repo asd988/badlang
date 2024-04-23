@@ -5,7 +5,7 @@ count = 0
 
 @here 
 count += 1
-<count
+<count, current count
 
 check = count
 check -= 10

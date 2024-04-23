@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Instant};
+use std::collections::HashMap;
 
 use pest::Parser;
 use pest_derive::Parser;
@@ -45,7 +45,7 @@ enum Instruction {
     Max(SimpleOperation),
     Invert(String),
     Delete(String),
-    Print(Value),
+    Print(Value, Option<String>),
     Jump(String, Option<Value>),
     Return
 }
@@ -62,7 +62,6 @@ fn main() {
     let instant = std::time::Instant::now();
     program.run();
     println!("execution: {:?}", instant.elapsed());
-    
 }
 
 fn create_program(from: &str) -> Program {
@@ -113,10 +112,15 @@ fn create_program(from: &str) -> Program {
                 program.instructions.push(Instruction::Delete(identifier));
             },
             Rule::print => {
-                let value = get_value(pair.into_inner().next().unwrap());
-                program.instructions.push(Instruction::Print(value));
+                println!("print {:?}", pair);
+                let mut pairs: pest::iterators::Pairs<'_, Rule> = pair.into_inner();
+                let value = get_value(pairs.next().unwrap());
+                if let Some(text) = pairs.next() {
+                    program.instructions.push(Instruction::Print(value, Some(text.as_str().to_string())));
+                } else {
+                    program.instructions.push(Instruction::Print(value, None));
+                }
             },
-            // TODO
             Rule::jump => {
                 let mut pairs = pair.into_inner();
                 let tag = pairs.next().unwrap().as_str().to_string();
@@ -220,8 +224,12 @@ impl Program {
             Instruction::Delete(identifier) => {
                 self.variables.remove(identifier);
             },
-            Instruction::Print(value) => {
-                println!("{}", self.get_from_value(value));
+            Instruction::Print(value, text) => {
+                if let Some(text) = text {
+                    println!("{} {}", self.get_from_value(value), text);
+                } else {
+                    println!("{}", self.get_from_value(value));
+                }
             },
             Instruction::Jump(tag, value) => {
                 let tag = self.tags.get(tag).unwrap();
