@@ -45,7 +45,7 @@ jmp here if a
 # it only jumps if the variable is not 0
 ```
 
-## fibbonaci
+## fibonacci
 
 ```badlang
 
@@ -54,10 +54,10 @@ jmp fib_get_nth
 < fib_result, is the result
 return
 
-# get the nth fibbonaci number
+# get the nth fibonacci number
 @fib_get_nth
     a = 1
-    b = 1
+    b = 0
     c = 1
 
     @fib_loop
@@ -72,3 +72,4 @@ return
 
     fib_result = a
     return
+```

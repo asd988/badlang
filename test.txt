@@ -1,14 +1,24 @@
 
-count = 0
+fib_n = 16
+jmp fib_get_nth
+< fib_result, is the result
+return
 
-# this is a comment 
+# get the nth fibonacci number
+@@fib_get_nth
+    a = 1
+    b = 0
+    c = 1
 
-@here 
-count += 1
-<count, current count
+    @fib_loop
+        a += b
+        b = c
+        c = a
+        < a
 
-check = count
-check -= 10
+        fib_n -= 1
 
-jmp here if check
+        jmp fib_loop if fib_n
 
+    fib_result = a
+    return
