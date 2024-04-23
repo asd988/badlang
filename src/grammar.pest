@@ -1,5 +1,29 @@
-instruction = { ("abc" | "")}
+identifier = @{ 'a'..'z' | 'A'..'Z' | "_" ~ ('a'..'z' | 'A'..'Z' | '0'..'9' | "_")* }
+number = @{ "-"? ~ '0'..'9'+ }
+not_newline = @{ !("\n" | "\r")+ }
 
-WHITE_SPACE = { " " }
+value = _{ number | identifier }
 
-init = _{ SOI ~ (instruction ~ NEWLINE)* ~ instruction? ~ EOI }
+instruction = _{ declaration | print | add | sub | mul | div | mod | max | min | invert | del | tag | stacked_tag | return | jump }
+    declaration = { identifier ~ "=" ~ value }
+    print = { "<" ~ value ~ ("," ~ not_newline)? }
+    add = { identifier ~ "+=" ~ value }
+    sub = { identifier ~ "-=" ~ value }
+    mul = { identifier ~ "*=" ~ value }
+    div = { identifier ~ "/=" ~ value }
+    mod = { identifier ~ "%=" ~ value }
+    max = { identifier ~ "max=" ~ value }
+    min = { identifier ~ "min=" ~ value }
+    invert = { identifier ~ "invert" }
+    del = { identifier ~ "delete" }
+    tag = { "@" ~ identifier }  
+    stacked_tag = { "@@" ~ identifier }  
+    return = { "return" }
+    jump = { "jmp" ~ identifier ~ ("if" ~ value)? }
+
+
+
+
+WHITESPACE = _{ " "+ }
+
+init = _{ SOI ~ (instruction? ~ NEWLINE)* ~ instruction? ~ EOI }
