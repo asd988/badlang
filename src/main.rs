@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Instant};
 
 use pest::Parser;
 use pest_derive::Parser;
@@ -55,7 +55,14 @@ fn main() {
     let input = std::fs::read_to_string("test.txt").unwrap();
 
     //create_program("a = -10\na+= 15\n< a\n").run();
-    create_program(&input).run();
+
+    let instant = std::time::Instant::now();
+    let program = create_program(&input);
+    println!("compilation: {:?}", instant.elapsed());
+    let instant = std::time::Instant::now();
+    program.run();
+    println!("execution: {:?}", instant.elapsed());
+    
 }
 
 fn create_program(from: &str) -> Program {

@@ -1,6 +1,8 @@
 
 count = 0
 
+# this is a comment 
+
 @here 
 count += 1
 <count
