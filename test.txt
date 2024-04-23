@@ -1,9 +1,12 @@
-a = 10
 
-ba = 20
+count = 0
 
+@here 
+count += 1
+<count
 
-a *= ba
+check = count
+check -= 10
 
-< a
-< ba
+jmp here if check
+

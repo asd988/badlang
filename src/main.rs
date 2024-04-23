@@ -46,8 +46,7 @@ enum Instruction {
     Invert(String),
     Delete(String),
     Print(Value),
-    Jump(String),
-    JumpIf(String, String),
+    Jump(String, Option<Value>),
     Return
 }
 
@@ -63,8 +62,6 @@ fn create_program(from: &str) -> Program {
     let result = MyParser::parse(Rule::init, from).unwrap();
 
     let mut program = Program::default();
-
-    let mut i = 1;
 
     for pair in result {
         match pair.as_rule() {
@@ -114,23 +111,27 @@ fn create_program(from: &str) -> Program {
             },
             // TODO
             Rule::jump => {
-                let tag = pair.into_inner().next().unwrap().as_str().to_string();
-                program.instructions.push(Instruction::Jump(tag));
+                let mut pairs = pair.into_inner();
+                let tag = pairs.next().unwrap().as_str().to_string();
+                if let Some(variable) = pairs.next() {
+                    program.instructions.push(Instruction::Jump(tag, Some(get_value(variable))))
+                } else {                    
+                    program.instructions.push(Instruction::Jump(tag, None));
+                }
             },
             Rule::tag => {
                 let tag = pair.into_inner().next().unwrap().as_str().to_string();
-                program.tags.insert(tag.clone(), Tag::Normal(i));
+                program.tags.insert(tag.clone(), Tag::Normal(program.instructions.len()));
             },
             Rule::stacked_tag => {
                 let tag = pair.into_inner().next().unwrap().as_str().to_string();
-                program.tags.insert(tag.clone(), Tag::Stacked(i));
+                program.tags.insert(tag.clone(), Tag::Stacked(program.instructions.len()));
             },
             Rule::r#return => {
                 program.instructions.push(Instruction::Return);
             },
             _ => {}
         }
-        i += 1;
     }
     program.instructions.push(Instruction::Return);
 
@@ -138,7 +139,7 @@ fn create_program(from: &str) -> Program {
 }
 
 fn get_simple_operation(pair: pest::iterators::Pair<Rule>) -> SimpleOperation {
-    let mut inner = pair.into_inner().into_iter();
+    let mut inner = pair.into_inner();
     let identifier = inner.next().unwrap().as_str().to_string();
     let value = get_value(inner.next().unwrap());
     SimpleOperation { identifier, value }
@@ -215,8 +216,11 @@ impl Program {
             Instruction::Print(value) => {
                 println!("{}", self.get_from_value(value));
             },
-            Instruction::Jump(tag) => {
+            Instruction::Jump(tag, value) => {
                 let tag = self.tags.get(tag).unwrap();
+                if value.is_some() && self.get_from_value(value.as_ref().unwrap()) == 0 {
+                    return false;
+                }
                 match tag {
                     Tag::Normal(i) => {
                         self.next_instruction = *i;
@@ -226,9 +230,6 @@ impl Program {
                         self.next_instruction = *i;
                     }
                 }
-            },
-            Instruction::JumpIf(_tag, _identifier) => {
-                todo!()
             },
             Instruction::Return => {
                 if let Some(i) = self.call_stack.pop() {
