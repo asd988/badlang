@@ -4,7 +4,8 @@ import * as vscode from 'vscode';
 import {
 	ServerOptions,
 	LanguageClientOptions,
-	LanguageClient
+	LanguageClient,
+    Trace
 } from "vscode-languageclient/node";
 
 let client: LanguageClient;
@@ -40,6 +41,7 @@ export function activate(context: vscode.ExtensionContext) {
     };
 
     client = new LanguageClient("Hello LSP", ServerOptions, clientOptions);
+    client.setTrace(Trace.Verbose);
 
     // For debugging only
     //lspClient.trace = Trace.Verbose;
