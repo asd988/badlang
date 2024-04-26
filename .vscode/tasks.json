@@ -4,18 +4,31 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "cargo build",
+			"type": "shell",
+			"command": "cargo build --bin lsp",
+			"group": {
+			  "kind": "build",
+			  "isDefault": true
+			},
+			"dependsOn": [
+				"prelaunch"
+			]
+		},
+		{
 			"label": "prelaunch",
 			"type": "npm",
 			"script": "watch",
 			"problemMatcher": "$tsc-watch",
 			"isBackground": true,
 			"presentation": {
-				"reveal": "never"
+				"reveal": "never",
+				"close": true
 			},
 			"group": {
 				"kind": "build",
 				"isDefault": true
-			}
+			}	
 		}
 	]
 }

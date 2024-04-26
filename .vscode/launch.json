@@ -15,7 +15,7 @@
 			"outFiles": [
 				"${workspaceFolder}/extension/out/**/*.js"
 			],
-			"preLaunchTask": "prelaunch",
+			"preLaunchTask": "cargo build",
 			"env": {
 			  "SERVER_PATH": "${workspaceRoot}/target/debug/lsp"
 			}
