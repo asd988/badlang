@@ -15,7 +15,10 @@
 			"outFiles": [
 				"${workspaceFolder}/extension/out/**/*.js"
 			],
-			"preLaunchTask": "npm: watch"
+			"preLaunchTask": "npm: watch",
+			"env": {
+			  "SERVER_PATH": "${workspaceRoot}/target/debug/lsp"
+			}
 		}
 	]
 }
