@@ -1,2 +1,3 @@
 [workspace]
-members=["language"]
+members = ["language", "lsp"]
+resolver = "2"
