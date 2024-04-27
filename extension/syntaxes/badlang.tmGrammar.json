@@ -4,7 +4,9 @@
     "repository": {
         "expression": {
             "patterns": [ 
+                {"include": "#comment"},
                 {"include": "#keyword"},
+                {"include": "#operator"},
                 {"include": "#tag"},
                 {"include": "#variable"}, 
                 {"include": "#number"},
@@ -19,6 +21,9 @@
         "keyword": {
             "match": "return|jmp|if|invert|delete", "name": "keyword.control"
         },
+        "operator": {
+            "match": "max=|min=", "name": "keyword.operator"
+        },
         "tag": {
             "match": "@@?\\s*([a-z]|[A-Z]|_)([a-z]|[A-Z]|[0-9]|_)*",
             "name": "entity.name.function"
@@ -30,6 +35,10 @@
             "endCaptures": {
                 "1": {"name": "string.unquoted"}
             }
+        },
+        "comment": {
+            "match": "#.*",
+            "name": "comment.line.number-sign"
         }
     }
 }

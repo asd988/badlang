@@ -7,7 +7,7 @@ pub mod lang;
 
 fn main() {
     // read "test" file
-    let input = std::fs::read_to_string("test.txt").unwrap();
+    let input = std::fs::read_to_string("../test.txt").unwrap();
 
     //create_program("a = -10\na+= 15\n< a\n").run();
 
