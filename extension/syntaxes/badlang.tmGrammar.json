@@ -1,0 +1,35 @@
+{
+    "scopeName": "source.badlang",
+    "patterns": [ {"include": "#expression"} ],
+    "repository": {
+        "expression": {
+            "patterns": [ 
+                {"include": "#keyword"},
+                {"include": "#tag"},
+                {"include": "#variable"}, 
+                {"include": "#number"},
+                {"include": "#print_instruction"}
+            ]
+        },
+        "variable": {
+            "match": "([a-z]|[A-Z]|_)([a-z]|[A-Z]|[0-9]|_)*",
+            "name" : "variable.parameter"
+        },
+        "number": {"match": "-?[0-9]+", "name": "constant.numeric"},
+        "keyword": {
+            "match": "return|jmp|if|invert|delete", "name": "keyword.control"
+        },
+        "tag": {
+            "match": "@@?\\s*([a-z]|[A-Z]|_)([a-z]|[A-Z]|[0-9]|_)*",
+            "name": "entity.name.function"
+        },
+        "print_instruction": {
+            "begin": "\\s*<\\s*",
+            "end": "\\s*,(.+)",
+            "patterns": [ {"include": "#expression"} ],
+            "endCaptures": {
+                "1": {"name": "string.unquoted"}
+            }
+        }
+    }
+}

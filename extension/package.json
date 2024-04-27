@@ -32,6 +32,13 @@
 					".bad"
 				]
 			}
+		],
+		"grammars": [
+			{
+				"language": "badlang",
+				"scopeName": "source.badlang",
+				"path": "./syntaxes/badlang.tmGrammar.json"
+			}
 		]
 	},
 	"scripts": {
