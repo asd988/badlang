@@ -12,7 +12,7 @@ fn main() {
     //create_program("a = -10\na+= 15\n< a\n").run();
 
     let instant = std::time::Instant::now();
-    let program = Program::default().compile_str(&input);
+    let program = Program::default().compile_str(&input).unwrap();
     println!("compilation: {:?}", instant.elapsed());
     let instant = std::time::Instant::now();
     program.run();

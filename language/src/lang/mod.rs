@@ -11,7 +11,7 @@ pub mod execute;
 pub struct MyParser;
 
 pub struct Program {
-    instructions: Vec<Instruction>,
+    pub instructions: Vec<Instruction>,
     variables: HashMap<String, i64>,
     tags: HashMap<String, Tag>,
     call_stack: Vec<usize>,
@@ -53,11 +53,13 @@ pub enum Value {
     Number(i64)
 }
 
+#[derive(Debug)]
 pub struct SimpleOperation {
     identifier: String,
     value: Value
 }
 
+#[derive(Debug)]
 pub enum Instruction {
     Declaration(SimpleOperation),
     Add(SimpleOperation),

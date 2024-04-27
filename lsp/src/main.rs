@@ -1,7 +1,5 @@
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-
 use dashmap::DashMap;
+use pest::error::LineColLocation;
 use ropey::Rope;
 use serde_json::Value;
 use tower_lsp::jsonrpc::Result;
@@ -11,7 +9,6 @@ use tower_lsp::{Client, LanguageServer, LspService, Server};
 #[derive(Debug)]
 struct Backend {
     client: Client,
-    error: Arc<AtomicBool>,
     files: DashMap<Url, String>
 }
 
@@ -59,23 +56,6 @@ impl LanguageServer for Backend {
         Ok(())
     }
 
-    async fn did_change_workspace_folders(&self, _: DidChangeWorkspaceFoldersParams) {
-        self.client
-            .log_message(MessageType::INFO, "workspace folders changed!")
-            .await;
-    }
-
-    async fn did_change_configuration(&self, _: DidChangeConfigurationParams) {
-        self.client
-            .log_message(MessageType::INFO, "configuration changed!")
-            .await;
-    }
-
-    async fn did_change_watched_files(&self, _: DidChangeWatchedFilesParams) {
-        self.client
-            .log_message(MessageType::INFO, "watched files have changed!")
-            .await;
-    }
 
     async fn execute_command(&self, _: ExecuteCommandParams) -> Result<Option<Value>> {
         self.client
@@ -93,63 +73,37 @@ impl LanguageServer for Backend {
 
     async fn did_open(&self, doc: DidOpenTextDocumentParams) {
         self.files.insert(doc.text_document.uri, doc.text_document.text.as_str().into());
-        self.client
-            .log_message(MessageType::INFO, format!("file opened: {:?}", self.files))
-            .await;
     }
 
     async fn did_change(&self, change: DidChangeTextDocumentParams) {
-        self.client
-            .log_message(MessageType::INFO, format!("file changed: {}", change.text_document.uri))
-            .await;
+        {
+            let mut get_mut = self.files.get_mut(&change.text_document.uri).unwrap();
+            let text = get_mut.value_mut();
 
-        let mut get_mut = self.files.get_mut(&change.text_document.uri).unwrap();
-        let text = get_mut.value_mut();
+            for change in change.content_changes {
+                let mut before_rope = Rope::from_str(text);
 
-        for change in change.content_changes {
-            let mut before_rope = Rope::from_str(text);
+                if let Some(range) = change.range {
+                    let start = before_rope.line_to_char(range.start.line as usize);
+                    let mut inside_rope = before_rope.split_off(start);
+                    let start_byte = inside_rope.char_to_byte(inside_rope.utf16_cu_to_char(range.start.character as usize));
+                    let end = inside_rope.line_to_char((range.end.line - range.start.line) as usize);
+                    let after_rope = inside_rope.split_off(end);
+                    let end_byte = after_rope.char_to_byte(after_rope.utf16_cu_to_char(range.end.character as usize));
 
-            if let Some(range) = change.range {
-                let start = before_rope.line_to_char(range.start.line as usize);
-                let mut inside_rope = before_rope.split_off(start);
-                let start_byte = inside_rope.char_to_byte(inside_rope.utf16_cu_to_char(range.start.character as usize));
-                let end = inside_rope.line_to_char((range.end.line - range.start.line) as usize);
-                let after_rope = inside_rope.split_off(end);
-                let end_byte = after_rope.char_to_byte(after_rope.utf16_cu_to_char(range.end.character as usize));
-
-                let before_bytes = before_rope.len_bytes();
-                text.replace_range((before_bytes + start_byte)..(before_bytes + inside_rope.len_bytes() + end_byte), &change.text);
+                    let before_bytes = before_rope.len_bytes();
+                    text.replace_range((before_bytes + start_byte)..(before_bytes + inside_rope.len_bytes() + end_byte), &change.text);
+                }
             }
         }
 
-        self.client
-            .log_message(MessageType::INFO, format!("file changed: {}", text))
-            .await;
+        self.on_change(change.text_document.uri).await;
     }
 
-    async fn did_save(&self, doc: DidSaveTextDocumentParams) {
+    async fn did_save(&self, _: DidSaveTextDocumentParams) {
         self.client
             .log_message(MessageType::INFO, "file saved!")
             .await;
-
-        match self.error.as_ref().load(Ordering::Relaxed) {
-            true => {
-                self.client.publish_diagnostics(doc.text_document.uri, [Diagnostic {
-                    range: Range { 
-                        start: Position { line: 10, character: 0 },
-                        end: Position { line: 10, character: 10 }
-                    },
-                    severity: Some(DiagnosticSeverity::ERROR),
-                    message: "Example error message".to_string(),
-                    ..Default::default()
-                }].into(), None).await;
-            }
-            false => {
-                self.client.publish_diagnostics(doc.text_document.uri, [].into(), None).await;
-            }
-        }
-        // flip the error state
-        self.error.as_ref().store(!self.error.as_ref().load(Ordering::Relaxed), Ordering::Relaxed);
     }
 
     async fn did_close(&self, doc: DidCloseTextDocumentParams) {
@@ -161,6 +115,51 @@ impl LanguageServer for Backend {
             CompletionItem::new_simple("Hello".to_string(), "Some detail".to_string()),
             CompletionItem::new_simple("Bye".to_string(), "More detail".to_string()),
         ])))
+    }
+}
+
+impl Backend {
+    async fn on_change(&self, uri: Url) {
+        let mut diags = Vec::new();
+        {
+            match badlang::Program::default().compile_str(&self.files.get(&uri).unwrap().as_str()) {
+                Ok(_program) => {
+                },
+                Err(e) => {
+                    let range = match e.line_col {
+                        LineColLocation::Pos((line, col)) => Range {
+                            start: Position {
+                                line: line as u32 - 1,
+                                character: col as u32,
+                            },
+                            end: Position {
+                                line: line as u32 - 1,
+                                character: col as u32,
+                            },
+                        },
+                        LineColLocation::Span((start_line, start_col), (end_line, end_col)) => Range {
+                            start: Position {
+                                line: start_line as u32,
+                                character: start_col as u32,
+                            },
+                            end: Position {
+                                line: end_line as u32,
+                                character: end_col as u32,
+                            },
+                        },
+                    };
+                    
+                    diags.push(Diagnostic {
+                        range,
+                        severity: Some(DiagnosticSeverity::ERROR),
+                        message: format!("Syntax Error\n{}", e.to_string()),
+                        ..Diagnostic::default()
+                    });
+                }
+            }
+        }
+        //self.client.log_message(MessageType::INFO, &this).await;
+        self.client.publish_diagnostics(uri, diags, None).await;
     }
 }
 
@@ -178,7 +177,6 @@ async fn main() {
     let (service, socket) = LspService::new(|client| 
         Backend { 
             client, 
-            error: Arc::new(AtomicBool::new(false)),
             files: DashMap::new()
         }
     );

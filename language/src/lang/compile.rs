@@ -1,8 +1,10 @@
+use pest::error::Error;
+
 use super::*;
 
 impl Program {
-    pub fn compile_str(mut self, from: &str) -> Program {
-        let result = MyParser::parse(Rule::init, from).unwrap();
+    pub fn compile_str(mut self, from: &str) -> Result<Program, Error<Rule>> {
+        let result = MyParser::parse(Rule::init, from)?;
     
         for pair in result {
             match pair.as_rule() {
@@ -80,7 +82,7 @@ impl Program {
         }
         self.instructions.push(Instruction::Return);
     
-        self    
+        Ok(self)    
     }
 }
 
