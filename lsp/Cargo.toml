@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+dashmap = "5.5.3"
+ropey = "1.6.1"
 serde_json = "1.0.116"
 tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread", "io-std"] }
 tower-lsp = "0.20.0"

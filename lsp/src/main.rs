@@ -1,3 +1,8 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+
+use dashmap::DashMap;
+use ropey::Rope;
 use serde_json::Value;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
@@ -6,6 +11,8 @@ use tower_lsp::{Client, LanguageServer, LspService, Server};
 #[derive(Debug)]
 struct Backend {
     client: Client,
+    error: Arc<AtomicBool>,
+    files: DashMap<Url, String>
 }
 
 #[tower_lsp::async_trait]
@@ -35,6 +42,7 @@ impl LanguageServer for Backend {
                     }),
                     file_operations: None,
                 }),
+                //position_encoding: Some(PositionEncodingKind::UTF8),
                 ..ServerCapabilities::default()
             },
             ..Default::default()
@@ -83,28 +91,69 @@ impl LanguageServer for Backend {
         Ok(None)
     }
 
-    async fn did_open(&self, _: DidOpenTextDocumentParams) {
+    async fn did_open(&self, doc: DidOpenTextDocumentParams) {
+        self.files.insert(doc.text_document.uri, doc.text_document.text.as_str().into());
         self.client
-            .log_message(MessageType::INFO, "file opened!")
+            .log_message(MessageType::INFO, format!("file opened: {:?}", self.files))
             .await;
     }
 
-    async fn did_change(&self, _: DidChangeTextDocumentParams) {
+    async fn did_change(&self, change: DidChangeTextDocumentParams) {
         self.client
-            .log_message(MessageType::INFO, "file changed!")
+            .log_message(MessageType::INFO, format!("file changed: {}", change.text_document.uri))
+            .await;
+
+        let mut get_mut = self.files.get_mut(&change.text_document.uri).unwrap();
+        let text = get_mut.value_mut();
+
+        for change in change.content_changes {
+            let mut before_rope = Rope::from_str(text);
+
+            if let Some(range) = change.range {
+                let start = before_rope.line_to_char(range.start.line as usize);
+                let mut inside_rope = before_rope.split_off(start);
+                let start_byte = inside_rope.char_to_byte(inside_rope.utf16_cu_to_char(range.start.character as usize));
+                let end = inside_rope.line_to_char((range.end.line - range.start.line) as usize);
+                let after_rope = inside_rope.split_off(end);
+                let end_byte = after_rope.char_to_byte(after_rope.utf16_cu_to_char(range.end.character as usize));
+
+                let before_bytes = before_rope.len_bytes();
+                text.replace_range((before_bytes + start_byte)..(before_bytes + inside_rope.len_bytes() + end_byte), &change.text);
+            }
+        }
+
+        self.client
+            .log_message(MessageType::INFO, format!("file changed: {}", text))
             .await;
     }
 
-    async fn did_save(&self, _: DidSaveTextDocumentParams) {
+    async fn did_save(&self, doc: DidSaveTextDocumentParams) {
         self.client
             .log_message(MessageType::INFO, "file saved!")
             .await;
+
+        match self.error.as_ref().load(Ordering::Relaxed) {
+            true => {
+                self.client.publish_diagnostics(doc.text_document.uri, [Diagnostic {
+                    range: Range { 
+                        start: Position { line: 10, character: 0 },
+                        end: Position { line: 10, character: 10 }
+                    },
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    message: "Example error message".to_string(),
+                    ..Default::default()
+                }].into(), None).await;
+            }
+            false => {
+                self.client.publish_diagnostics(doc.text_document.uri, [].into(), None).await;
+            }
+        }
+        // flip the error state
+        self.error.as_ref().store(!self.error.as_ref().load(Ordering::Relaxed), Ordering::Relaxed);
     }
 
-    async fn did_close(&self, _: DidCloseTextDocumentParams) {
-        self.client
-            .log_message(MessageType::INFO, "file closed!")
-            .await;
+    async fn did_close(&self, doc: DidCloseTextDocumentParams) {
+        self.files.remove(&doc.text_document.uri);
     }
 
     async fn completion(&self, _: CompletionParams) -> Result<Option<CompletionResponse>> {
@@ -126,6 +175,12 @@ async fn main() {
     #[cfg(feature = "runtime-agnostic")]
     let (stdin, stdout) = (stdin.compat(), stdout.compat_write());
 
-    let (service, socket) = LspService::new(|client| Backend { client });
+    let (service, socket) = LspService::new(|client| 
+        Backend { 
+            client, 
+            error: Arc::new(AtomicBool::new(false)),
+            files: DashMap::new()
+        }
+    );
     Server::new(stdin, stdout, socket).serve(service).await;
 }
