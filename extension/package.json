@@ -10,7 +10,7 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onLanguage:plaintext"
+		"onLanguage:badlang"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -18,6 +18,19 @@
 			{
 				"command": "badlang.helloWorld",
 				"title": "Hello World!"
+			}
+		],
+		"languages": [
+			{
+				"id": "badlang",
+				"aliases": [
+					"Badlang",
+					"bad"
+				],
+				"extensions": [
+					".badlang",
+					".bad"
+				]
 			}
 		]
 	},

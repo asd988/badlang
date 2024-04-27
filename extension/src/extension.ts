@@ -34,7 +34,7 @@ export function activate(context: vscode.ExtensionContext) {
         // Register the server for plain text documents
         documentSelector: [
             {
-                pattern: '**/*.txt',
+                pattern: '{**/*.badlang,**/*.bad}',
             }
         ],
 
