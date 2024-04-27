@@ -72,7 +72,8 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, doc: DidOpenTextDocumentParams) {
-        self.files.insert(doc.text_document.uri, doc.text_document.text.as_str().into());
+        self.files.insert(doc.text_document.uri.clone(), doc.text_document.text.as_str().into());
+        self.on_change(doc.text_document.uri).await;
     }
 
     async fn did_change(&self, change: DidChangeTextDocumentParams) {
@@ -111,10 +112,43 @@ impl LanguageServer for Backend {
     }
 
     async fn completion(&self, _: CompletionParams) -> Result<Option<CompletionResponse>> {
-        Ok(Some(CompletionResponse::Array(vec![
-            CompletionItem::new_simple("Hello".to_string(), "Some detail".to_string()),
-            CompletionItem::new_simple("Bye".to_string(), "More detail".to_string()),
-        ])))
+        Ok(Some(CompletionResponse::Array([
+            CompletionItem {
+                label: "return".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                ..CompletionItem::default()
+            },
+            CompletionItem {
+                label: "jmp".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                ..CompletionItem::default()
+            },
+            CompletionItem {
+                label: "if".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                ..CompletionItem::default()
+            },
+            CompletionItem {
+                label: "invert".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                ..CompletionItem::default()
+            },
+            CompletionItem {
+                label: "delete".to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                ..CompletionItem::default()
+            },
+            CompletionItem {
+                label: "max=".to_string(),
+                kind: Some(CompletionItemKind::OPERATOR),
+                ..CompletionItem::default()
+            },
+            CompletionItem {
+                label: "min=".to_string(),
+                kind: Some(CompletionItemKind::OPERATOR),
+                ..CompletionItem::default()
+            },
+        ].into())))
     }
 }
 
