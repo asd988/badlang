@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use pest::Parser;
+use pest::{error::Error, Parser};
 use pest_derive::Parser;
 
 pub mod compile;
@@ -10,10 +10,15 @@ pub mod execute;
 #[grammar = "grammar.pest"]
 pub struct MyParser;
 
-pub struct Program {
+#[derive(Default)]
+pub struct CompiledCode {
     pub instructions: Vec<Instruction>,
+    pub tags: HashMap<String, Tag>
+}
+
+pub struct Program {
+    pub code: CompiledCode,
     variables: HashMap<String, i64>,
-    tags: HashMap<String, Tag>,
     call_stack: Vec<usize>,
     next_instruction: usize,
     pub stdout_function: Box<dyn FnMut(String) -> ()>,
@@ -22,9 +27,8 @@ pub struct Program {
 impl Default for Program {
     fn default() -> Self {
         Program {
-            instructions: Vec::new(),
+            code: CompiledCode::default(),
             variables: HashMap::new(),
-            tags: HashMap::new(),
             call_stack: Vec::new(),
             next_instruction: 0,
             stdout_function: Box::new(|text| println!("{}", text))
@@ -39,6 +43,11 @@ impl Program {
             stdout_function: Box::new(stdout_function),
             ..Default::default()
         }
+    }
+
+    pub fn compile_str(mut self, from: &str) -> Result<Self, Error<Rule>> {
+        self.code = self.code.compile_str(from)?;
+        Ok(self)
     }
 }
 

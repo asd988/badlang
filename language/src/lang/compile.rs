@@ -2,8 +2,8 @@ use pest::error::Error;
 
 use super::*;
 
-impl Program {
-    pub fn compile_str(mut self, from: &str) -> Result<Program, Error<Rule>> {
+impl CompiledCode {
+    pub fn compile_str(mut self, from: &str) -> Result<CompiledCode, Error<Rule>> {
         let result = MyParser::parse(Rule::init, from)?;
     
         for pair in result {

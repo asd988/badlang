@@ -6,10 +6,15 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-#[derive(Debug)]
+
 struct Backend {
     client: Client,
-    files: DashMap<Url, String>
+    files: DashMap<Url, File>
+}
+
+struct File {
+    text: String,
+    code: Option<badlang::CompiledCode>
 }
 
 #[tower_lsp::async_trait]
@@ -72,14 +77,18 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, doc: DidOpenTextDocumentParams) {
-        self.files.insert(doc.text_document.uri.clone(), doc.text_document.text.as_str().into());
+        self.files.insert(doc.text_document.uri.clone(), File {
+            text: doc.text_document.text,
+            code: None
+        });
+        
         self.on_change(doc.text_document.uri).await;
     }
 
     async fn did_change(&self, change: DidChangeTextDocumentParams) {
         {
             let mut get_mut = self.files.get_mut(&change.text_document.uri).unwrap();
-            let text = get_mut.value_mut();
+            let text = &mut get_mut.value_mut().text;
 
             for change in change.content_changes {
                 let mut before_rope = Rope::from_str(text);
@@ -111,8 +120,8 @@ impl LanguageServer for Backend {
         self.files.remove(&doc.text_document.uri);
     }
 
-    async fn completion(&self, _: CompletionParams) -> Result<Option<CompletionResponse>> {
-        Ok(Some(CompletionResponse::Array([
+    async fn completion(&self, param: CompletionParams) -> Result<Option<CompletionResponse>> {
+        let mut items = vec![
             CompletionItem {
                 label: "return".to_string(),
                 kind: Some(CompletionItemKind::KEYWORD),
@@ -148,7 +157,23 @@ impl LanguageServer for Backend {
                 kind: Some(CompletionItemKind::OPERATOR),
                 ..CompletionItem::default()
             },
-        ].into())))
+        ];
+
+        if let Some(file) = self.files.get(&param.text_document_position.text_document.uri) {
+            if let Some(code) = &file.code {
+                for key in code.tags.keys() {
+                    items.push(CompletionItem {
+                        label: key.clone(),
+                        kind: Some(CompletionItemKind::FUNCTION),
+                        ..CompletionItem::default()
+                    });
+                }
+            }
+        }
+
+        Ok(Some(CompletionResponse::Array(
+            items
+        )))
     }
 }
 
@@ -156,8 +181,10 @@ impl Backend {
     async fn on_change(&self, uri: Url) {
         let mut diags = Vec::new();
         {
-            match badlang::Program::default().compile_str(&self.files.get(&uri).unwrap().as_str()) {
-                Ok(_program) => {
+            let mut file = self.files.get_mut(&uri).unwrap();
+            match badlang::CompiledCode::default().compile_str(&file.text.as_str()) {
+                Ok(code) => {
+                    file.code = Some(code);
                 },
                 Err(e) => {
                     let range = match e.line_col {

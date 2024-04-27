@@ -13,7 +13,7 @@ impl Program {
     }
 
     fn execute_instrucion(&mut self, ix: usize) -> bool {
-        let instruction = &self.instructions[ix];
+        let instruction = &self.code.instructions[ix];
 
         match instruction {
              Instruction::Declaration(simple_operation) => {
@@ -70,7 +70,7 @@ impl Program {
                 }
             },
             Instruction::Jump(tag, value) => {
-                let tag = self.tags.get(tag).unwrap();
+                let tag = self.code.tags.get(tag).unwrap();
                 if value.is_some() && self.get_from_value(value.as_ref().unwrap()) == 0 {
                     return false;
                 }
