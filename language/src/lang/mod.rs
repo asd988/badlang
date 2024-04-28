@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use pest::{error::Error, Parser};
 use pest_derive::Parser;
@@ -13,7 +13,8 @@ pub struct MyParser;
 #[derive(Default)]
 pub struct CompiledCode {
     pub instructions: Vec<Instruction>,
-    pub tags: HashMap<String, Tag>
+    pub tags: HashMap<String, Tag>,
+    pub variables: Option<HashSet<String>>,
 }
 
 pub struct Program {

@@ -10,6 +10,9 @@ impl CompiledCode {
             match pair.as_rule() {
                 Rule::declaration => {
                     let simple_operation = get_simple_operation(pair);
+                    if let Some(vars) = &mut self.variables {
+                        vars.insert(simple_operation.identifier.clone());
+                    }
                     self.instructions.push(Instruction::Declaration(simple_operation));
                 },
                 Rule::add => {
@@ -83,6 +86,11 @@ impl CompiledCode {
         self.instructions.push(Instruction::Return);
     
         Ok(self)    
+    }
+
+    pub fn with_vars(mut self) -> Self {
+        self.variables = Some(HashSet::new());
+        self
     }
 }
 

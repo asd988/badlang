@@ -168,6 +168,13 @@ impl LanguageServer for Backend {
                         ..CompletionItem::default()
                     });
                 }
+                for var in code.variables.as_ref().unwrap() {
+                    items.push(CompletionItem {
+                        label: var.clone(),
+                        kind: Some(CompletionItemKind::VARIABLE),
+                        ..CompletionItem::default()
+                    });
+                }
             }
         }
 
@@ -182,7 +189,7 @@ impl Backend {
         let mut diags = Vec::new();
         {
             let mut file = self.files.get_mut(&uri).unwrap();
-            match badlang::CompiledCode::default().compile_str(&file.text.as_str()) {
+            match badlang::CompiledCode::default().with_vars().compile_str(&file.text.as_str()) {
                 Ok(code) => {
                     file.code = Some(code);
                 },
