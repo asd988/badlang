@@ -45,31 +45,30 @@ jmp here if a
 # it only jumps if the variable is not 0
 ```
 
-## fibonacci
+## Examples
+examples can be found in the examples folder
 
-```badlang
-
-fib_n = 10
-jmp fib_get_nth
-< fib_result, is the result
-return
-
-# get the nth fibonacci number
-@fib_get_nth
-    a = 1
-    b = 0
-    c = 1
-
-    @fib_loop
-        a += b
-        b = c
-        c = a
-        < a
-
-        fib_n -= 1
-
-        jmp fib_loop if fib_n
-
-    fib_result = a
-    return
+## How to run
+```sh
+cargo run --bin badlang path/to/file.badlang
 ```
+> Note that the file doesn't neccesarily have to have the extension `.badlang`
+
+## language server
+The language server can be compiled with the following command
+```sh
+cargo build --bin lsp
+```
+
+The vscode extension can be ran by pressing `F5` inside vscode, or inside the `Run and Debug` tab. 
+You might have to call `npm install` inside the `extension` folder to install the dependencies.
+
+## what's next?
+For now I'm done with this project. I justed wanted to try out making an LSP server, and I might expand on it in the future.
+However, I'm definitely not going to work on the language itself anymore. 
+
+LSP
+- [ ] go to definition for tags
+- [ ] hover documentation for tags
+- [ ] errors for jumps to undefined tags
+- [ ] errors for variables that are never defined
