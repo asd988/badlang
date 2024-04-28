@@ -1,3 +1,4 @@
+# cargo run --bin badlang ./examples/test.badlang
 
 fib_n = 16
 jmp fib_get_nth

@@ -6,13 +6,12 @@ mod test;
 pub mod lang;
 
 fn main() {
-    // read "test" file
-    let input = std::fs::read_to_string("../test.txt").unwrap();
+    let path: String = std::env::args().skip(1).next().expect("no path provided");
 
-    //create_program("a = -10\na+= 15\n< a\n").run();
+    let input = std::fs::read_to_string(path).expect("invalid path");
 
     let instant = std::time::Instant::now();
-    let program = Program::default().compile_str(&input).unwrap();
+    let program = Program::default().compile_str(&input).map_err(|e| panic!("{}", e)).unwrap();
     println!("compilation: {:?}", instant.elapsed());
     let instant = std::time::Instant::now();
     program.run();
