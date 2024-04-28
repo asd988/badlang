@@ -68,7 +68,7 @@ For now I'm done with this project. I justed wanted to try out making an LSP ser
 However, I'm definitely not going to work on the language itself anymore. 
 
 LSP
-- [ ] go to definition for tags
+- [x] go to definition for tags
 - [ ] hover documentation for tags
 - [x] errors for jumps to undefined tags
 - [x] errors for variables that are never defined
