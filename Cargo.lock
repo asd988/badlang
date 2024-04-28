@@ -64,6 +64,7 @@ dependencies = [
 name = "badlang"
 version = "0.1.0"
 dependencies = [
+ "lsp-types",
  "pest",
  "pest_derive",
 ]

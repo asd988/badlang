@@ -70,12 +70,14 @@ impl CompiledCode {
                     }
                 },
                 Rule::tag => {
-                    let tag = pair.into_inner().next().unwrap().as_str().to_string();
-                    self.tags.insert(tag.clone(), Tag::Normal(self.instructions.len()));
+                    let tag = pair.into_inner().next().unwrap();
+                    let (key, val) = Tag::from_pair(tag, TagType::Normal, self.instructions.len());
+                    self.tags.insert(key, val);
                 },
                 Rule::stacked_tag => {
-                    let tag = pair.into_inner().next().unwrap().as_str().to_string();
-                    self.tags.insert(tag.clone(), Tag::Stacked(self.instructions.len()));
+                    let tag = pair.into_inner().next().unwrap();
+                    let (key, val) = Tag::from_pair(tag, TagType::Stacked, self.instructions.len());
+                    self.tags.insert(key, val);
                 },
                 Rule::r#return => {
                     self.instructions.push(Instruction::Return);
@@ -88,8 +90,9 @@ impl CompiledCode {
         Ok(self)    
     }
 
-    pub fn with_vars(mut self) -> Self {
+    pub fn lsp(mut self) -> Self {
         self.variables = Some(HashSet::new());
+        self.locations = Some(Vec::new());
         self
     }
 }

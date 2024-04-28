@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 pest = { workspace = true }
 pest_derive = "2.7.9"
+lsp-types = { }

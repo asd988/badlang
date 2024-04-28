@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
-use pest::{error::Error, Parser};
+use lsp_types::Range;
+use pest::{error::Error, Parser, Span};
 use pest_derive::Parser;
 
 pub mod compile;
@@ -16,6 +17,12 @@ pub struct CompiledCode {
     pub instructions: Vec<Instruction>,
     pub tags: HashMap<String, Tag>,
     pub variables: Option<HashSet<String>>,
+    pub locations: Option<Vec<TagLocation>>
+}
+
+pub struct TagLocation {
+    pub this: Range,
+    pub definition: Range
 }
 
 pub struct Program {
@@ -53,9 +60,28 @@ impl Program {
     }
 }
 
-pub enum Tag {
-    Normal(usize),
-    Stacked(usize)
+pub struct Tag {
+    pub tag_type: TagType,
+    pub index: usize,
+    pub range: Range,
+}
+
+impl Tag {
+    pub fn from_pair(pair: pest::iterators::Pair<Rule>, tag_type: TagType, index: usize) -> (String, Self) {
+        (
+            pair.as_str().to_string(), 
+            Tag {
+                tag_type,
+                index,
+                range: get_range_from_span(pair.as_span())
+            }
+        )
+    }
+}
+
+pub enum TagType {
+    Normal,
+    Stacked
 }
 
 #[derive(Debug)]
@@ -78,17 +104,30 @@ impl Value {
 #[allow(dead_code)]
 pub struct Identifier {
     name: String,
-    line: usize,
-    col: usize
+    range: Range
 }
 
 impl Identifier {
-    pub fn new(name: &str, line_col: (usize, usize)) -> Self {
-        Identifier { name: name.to_string(), line: line_col.0, col: line_col.1 }
-    }
-
     pub fn from_pair(pair: pest::iterators::Pair<Rule>) -> Self {
-        Identifier::new(pair.as_str(), pair.line_col())
+        Identifier {
+            name: pair.as_str().to_string(),
+            range: get_range_from_span(pair.as_span())
+        }
+    }
+}
+
+pub fn get_range_from_span(span: Span) -> Range {
+    let start = span.start_pos().line_col();
+    let end = span.end_pos().line_col();
+    Range {
+        start: lsp_types::Position {
+            line: start.0 as u32 - 1,
+            character: start.1 as u32 - 1,
+        },
+        end: lsp_types::Position {
+            line: end.0 as u32 - 1,
+            character: end.1 as u32 - 1,
+        },
     }
 }
 

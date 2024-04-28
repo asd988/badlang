@@ -74,13 +74,13 @@ impl Program {
                 if value.is_some() && self.get_from_value(value.as_ref().unwrap()) == 0 {
                     return false;
                 }
-                match tag {
-                    Tag::Normal(i) => {
-                        self.next_instruction = *i;
+                match tag.tag_type {
+                    TagType::Normal => {
+                        self.next_instruction = tag.index;
                     },
-                    Tag::Stacked(i) => {
+                    TagType::Stacked => {
                         self.call_stack.push(self.next_instruction);
-                        self.next_instruction = *i;
+                        self.next_instruction = tag.index;
                     }
                 }
             },

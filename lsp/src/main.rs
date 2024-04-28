@@ -44,6 +44,7 @@ impl LanguageServer for Backend {
                     }),
                     file_operations: None,
                 }),
+                definition_provider: Some(OneOf::Left(true)),
                 //position_encoding: Some(PositionEncodingKind::UTF8),
                 ..ServerCapabilities::default()
             },
@@ -182,6 +183,31 @@ impl LanguageServer for Backend {
             items
         )))
     }
+
+    async fn goto_definition(&self, params: GotoDefinitionParams) -> Result<Option<GotoDefinitionResponse>> {
+        if let Some(file) = self.files.get(&params.text_document_position_params.text_document.uri) {
+            if let Some(code) = &file.code {
+                if let Some(locations) = &code.locations {
+                    for loc in locations {
+                        if is_in_range(loc.this, params.text_document_position_params.position) {
+                            return Ok(Some(GotoDefinitionResponse::Scalar(
+                                Location {
+                                    uri: params.text_document_position_params.text_document.uri.clone(),
+                                    range: loc.definition.clone()
+                                }
+                            )));
+                        }
+                    }
+                }
+            }
+        }
+        Ok(None)
+    }
+}   
+
+fn is_in_range(range: Range, position: Position) -> bool {
+    position.line >= range.start.line && position.line <= range.end.line &&
+    position.character >= range.start.character && position.character <= range.end.character
 }
 
 impl Backend {
@@ -189,27 +215,16 @@ impl Backend {
         let mut diags = Vec::new();
         {
             let mut file = self.files.get_mut(&uri).unwrap();
-            match badlang::CompiledCode::default().with_vars().compile_str(&file.text.as_str()) {
-                Ok(code) => {
+            match badlang::CompiledCode::default().lsp().compile_str(&file.text.as_str()) {
+                Ok(mut code) => {
                     match code.analyse() {
                         Ok(_) => {
                             file.code = Some(code);
                         },
                         Err(e) => {
                             for e in e {
-                                let range = Range {
-                                    start: Position {
-                                        line: e.from_line as u32 - 1,
-                                        character: e.from_col as u32 - 1,
-                                    },
-                                    end: Position {
-                                        line: e.to_line as u32 - 1,
-                                        character: e.to_col as u32 - 1,
-                                    },
-                                };
-            
                                 diags.push(Diagnostic {
-                                    range,
+                                    range: e.range,
                                     severity: Some(DiagnosticSeverity::ERROR),
                                     message: e.message,
                                     ..Diagnostic::default()
