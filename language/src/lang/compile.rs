@@ -11,7 +11,7 @@ impl CompiledCode {
                 Rule::declaration => {
                     let simple_operation = get_simple_operation(pair);
                     if let Some(vars) = &mut self.variables {
-                        vars.insert(simple_operation.identifier.clone());
+                        vars.insert(simple_operation.identifier.name.clone());
                     }
                     self.instructions.push(Instruction::Declaration(simple_operation));
                 },
@@ -44,12 +44,12 @@ impl CompiledCode {
                     self.instructions.push(Instruction::Min(simple_operation));
                 },
                 Rule::invert => {
-                    let identifier = pair.into_inner().next().unwrap().as_str().to_string();
-                    self.instructions.push(Instruction::Invert(identifier));
+                    let identifier = pair.into_inner().next().unwrap();
+                    self.instructions.push(Instruction::Invert(Identifier::from_pair(identifier)));
                 },
                 Rule::delete => {
-                    let identifier = pair.into_inner().next().unwrap().as_str().to_string();
-                    self.instructions.push(Instruction::Delete(identifier));
+                    let identifier = pair.into_inner().next().unwrap();
+                    self.instructions.push(Instruction::Delete(Identifier::from_pair(identifier)));
                 },
                 Rule::print => {
                     let mut pairs: pest::iterators::Pairs<'_, Rule> = pair.into_inner();
@@ -62,11 +62,11 @@ impl CompiledCode {
                 },
                 Rule::jump => {
                     let mut pairs = pair.into_inner();
-                    let tag = pairs.next().unwrap().as_str().to_string();
+                    let tag = pairs.next().unwrap();
                     if let Some(variable) = pairs.next() {
-                        self.instructions.push(Instruction::Jump(tag, Some(get_value(variable))))
+                        self.instructions.push(Instruction::Jump(Identifier::from_pair(tag), Some(get_value(variable))))
                     } else {                    
-                        self.instructions.push(Instruction::Jump(tag, None));
+                        self.instructions.push(Instruction::Jump(Identifier::from_pair(tag), None));
                     }
                 },
                 Rule::tag => {
@@ -96,14 +96,14 @@ impl CompiledCode {
 
 fn get_simple_operation(pair: pest::iterators::Pair<Rule>) -> SimpleOperation {
     let mut inner = pair.into_inner();
-    let identifier = inner.next().unwrap().as_str().to_string();
+    let identifier = inner.next().unwrap();
     let value = get_value(inner.next().unwrap());
-    SimpleOperation { identifier, value }
+    SimpleOperation { identifier: Identifier::from_pair(identifier), value }
 }
 
 fn get_value(pair: pest::iterators::Pair<Rule>) -> Value {
     match pair.as_rule() {
-        Rule::identifier => Value::Identifier(pair.as_str().to_string()),
+        Rule::identifier => Value::Identifier(Identifier::from_pair(pair)),
         Rule::number => Value::Number(pair.as_str().parse().unwrap()),
         _ => panic!("Unexpected value")
     }

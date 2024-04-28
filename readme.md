@@ -70,5 +70,5 @@ However, I'm definitely not going to work on the language itself anymore.
 LSP
 - [ ] go to definition for tags
 - [ ] hover documentation for tags
-- [ ] errors for jumps to undefined tags
-- [ ] errors for variables that are never defined
+- [x] errors for jumps to undefined tags
+- [x] errors for variables that are never defined

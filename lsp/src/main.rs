@@ -191,7 +191,32 @@ impl Backend {
             let mut file = self.files.get_mut(&uri).unwrap();
             match badlang::CompiledCode::default().with_vars().compile_str(&file.text.as_str()) {
                 Ok(code) => {
-                    file.code = Some(code);
+                    match code.analyse() {
+                        Ok(_) => {
+                            file.code = Some(code);
+                        },
+                        Err(e) => {
+                            for e in e {
+                                let range = Range {
+                                    start: Position {
+                                        line: e.from_line as u32 - 1,
+                                        character: e.from_col as u32 - 1,
+                                    },
+                                    end: Position {
+                                        line: e.to_line as u32 - 1,
+                                        character: e.to_col as u32 - 1,
+                                    },
+                                };
+            
+                                diags.push(Diagnostic {
+                                    range,
+                                    severity: Some(DiagnosticSeverity::ERROR),
+                                    message: e.message,
+                                    ..Diagnostic::default()
+                                });
+                            }
+                        }
+                    }
                 },
                 Err(e) => {
                     let range = match e.line_col {

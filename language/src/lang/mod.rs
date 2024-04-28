@@ -5,6 +5,7 @@ use pest_derive::Parser;
 
 pub mod compile;
 pub mod execute;
+pub mod analyse;
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
@@ -59,13 +60,41 @@ pub enum Tag {
 
 #[derive(Debug)]
 pub enum Value {
-    Identifier(String),
+    Identifier(Identifier),
     Number(i64)
+}
+
+impl Value {
+    pub fn get_id(&self) -> Option<&Identifier> {
+        match self {
+            Value::Identifier(id) => Some(id),
+            _ => None
+        }
+    }
+}
+
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct Identifier {
+    name: String,
+    line: usize,
+    col: usize
+}
+
+impl Identifier {
+    pub fn new(name: &str, line_col: (usize, usize)) -> Self {
+        Identifier { name: name.to_string(), line: line_col.0, col: line_col.1 }
+    }
+
+    pub fn from_pair(pair: pest::iterators::Pair<Rule>) -> Self {
+        Identifier::new(pair.as_str(), pair.line_col())
+    }
 }
 
 #[derive(Debug)]
 pub struct SimpleOperation {
-    identifier: String,
+    identifier: Identifier,
     value: Value
 }
 
@@ -79,9 +108,36 @@ pub enum Instruction {
     Div(SimpleOperation),
     Mod(SimpleOperation),
     Max(SimpleOperation),
-    Invert(String),
-    Delete(String),
+    Invert(Identifier),
+    Delete(Identifier),
     Print(Value, Option<String>),
-    Jump(String, Option<Value>),
+    Jump(Identifier, Option<Value>),
     Return
+}
+
+impl Instruction {
+    pub fn get_tag_id(&self) -> Option<&Identifier> {
+        match self {
+            Instruction::Jump(tag, _) => Some(tag),
+            _ => None
+        }
+    }
+
+    pub fn get_variable_id(&self) -> [Option<&Identifier>; 2] {
+        match self {
+            Instruction::Declaration(simple_operation) => [Some(&simple_operation.identifier), simple_operation.value.get_id()],
+            Instruction::Add(simple_operation) => [Some(&simple_operation.identifier), simple_operation.value.get_id()],
+            Instruction::Sub(simple_operation) => [Some(&simple_operation.identifier), simple_operation.value.get_id()],
+            Instruction::Mul(simple_operation) => [Some(&simple_operation.identifier), simple_operation.value.get_id()],
+            Instruction::Div(simple_operation) => [Some(&simple_operation.identifier), simple_operation.value.get_id()],
+            Instruction::Mod(simple_operation) => [Some(&simple_operation.identifier), simple_operation.value.get_id()],
+            Instruction::Max(simple_operation) => [Some(&simple_operation.identifier), simple_operation.value.get_id()],
+            Instruction::Min(simple_operation) => [Some(&simple_operation.identifier), simple_operation.value.get_id()],
+            Instruction::Invert(identifier) => [Some(identifier), None],
+            Instruction::Delete(identifier) => [Some(identifier), None],
+            Instruction::Print(value, _) => [value.get_id(), None],
+            Instruction::Jump(_tag, value) => [value.as_ref().and_then(|v| v.get_id()), None],
+            _ => [None, None]
+        }
+    }
 }
