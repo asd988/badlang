@@ -20,6 +20,7 @@ pub struct CompiledCode {
     pub locations: Option<Vec<TagLocation>>
 }
 
+#[derive(Clone)]
 pub struct TagLocation {
     pub this: Range,
     pub definition: Range
@@ -101,7 +102,6 @@ impl Value {
 
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct Identifier {
     name: String,
     range: Range

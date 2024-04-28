@@ -1,3 +1,4 @@
+use badlang::TagLocation;
 use dashmap::DashMap;
 use pest::error::LineColLocation;
 use ropey::Rope;
@@ -45,6 +46,7 @@ impl LanguageServer for Backend {
                     file_operations: None,
                 }),
                 definition_provider: Some(OneOf::Left(true)),
+                hover_provider: Some(HoverProviderCapability::Simple(true)),
                 //position_encoding: Some(PositionEncodingKind::UTF8),
                 ..ServerCapabilities::default()
             },
@@ -185,23 +187,25 @@ impl LanguageServer for Backend {
     }
 
     async fn goto_definition(&self, params: GotoDefinitionParams) -> Result<Option<GotoDefinitionResponse>> {
-        if let Some(file) = self.files.get(&params.text_document_position_params.text_document.uri) {
-            if let Some(code) = &file.code {
-                if let Some(locations) = &code.locations {
-                    for loc in locations {
-                        if is_in_range(loc.this, params.text_document_position_params.position) {
-                            return Ok(Some(GotoDefinitionResponse::Scalar(
-                                Location {
-                                    uri: params.text_document_position_params.text_document.uri.clone(),
-                                    range: loc.definition.clone()
-                                }
-                            )));
-                        }
-                    }
-                }
-            }
+        if let Some(location) = self.get_tag_location(&params.text_document_position_params.text_document.uri, params.text_document_position_params.position) {
+            Ok(Some(GotoDefinitionResponse::Scalar(Location {
+                uri: params.text_document_position_params.text_document.uri,
+                range: location.definition,
+            })))
+        } else {
+            Ok(None)
         }
-        Ok(None)
+    }
+
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        if let Some(location) = self.get_tag_location(&params.text_document_position_params.text_document.uri, params.text_document_position_params.position) {
+            Ok(Some(Hover {
+                contents: HoverContents::Scalar(MarkedString::String(format!("{:?}", params))),
+                range: Some(location.this)
+            }))
+        } else {
+            Ok(None)
+        }
     }
 }   
 
@@ -211,6 +215,21 @@ fn is_in_range(range: Range, position: Position) -> bool {
 }
 
 impl Backend {
+    fn get_tag_location(&self, uri: &Url, position: Position) -> Option<TagLocation> {
+        if let Some(file) = self.files.get(uri) {
+            if let Some(code) = &file.code {
+                if let Some(locations) = &code.locations {
+                    for loc in locations {
+                        if is_in_range(loc.this, position) {
+                            return Some(loc.clone());
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
     async fn on_change(&self, uri: Url) {
         let mut diags = Vec::new();
         {
