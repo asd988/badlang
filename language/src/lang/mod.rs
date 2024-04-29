@@ -23,7 +23,7 @@ pub struct CompiledCode {
 #[derive(Clone)]
 pub struct TagLocation {
     pub this: Range,
-    pub definition: Range
+    pub definition: usize
 }
 
 pub struct Program {
@@ -61,6 +61,7 @@ impl Program {
     }
 }
 
+#[derive(Clone)]
 pub struct Tag {
     pub tag_type: TagType,
     pub index: usize,
@@ -82,6 +83,7 @@ impl Tag {
     }
 }
 
+#[derive(Clone)]
 pub enum TagType {
     Normal,
     Stacked
