@@ -6,7 +6,11 @@ impl CompiledCode {
     pub fn compile_str(mut self, from: &str) -> Result<CompiledCode, Error<Rule>> {
         let result = MyParser::parse(Rule::init, from)?;
     
+        let mut doc = "".to_string();
+        let mut last_doc_line = 0;
+
         for pair in result {
+            let new_pair = pair.clone();
             match pair.as_rule() {
                 Rule::declaration => {
                     let simple_operation = get_simple_operation(pair);
@@ -71,18 +75,32 @@ impl CompiledCode {
                 },
                 Rule::tag => {
                     let tag = pair.into_inner().next().unwrap();
-                    let (key, val) = Tag::from_pair(tag, TagType::Normal, self.instructions.len());
+                    let (key, val) = Tag::from_pair(tag, TagType::Normal, self.instructions.len(), doc.clone());
                     self.tags.insert(key, val);
                 },
                 Rule::stacked_tag => {
                     let tag = pair.into_inner().next().unwrap();
-                    let (key, val) = Tag::from_pair(tag, TagType::Stacked, self.instructions.len());
+                    let (key, val) = Tag::from_pair(tag, TagType::Stacked, self.instructions.len(), doc.clone());
                     self.tags.insert(key, val);
                 },
                 Rule::r#return => {
                     self.instructions.push(Instruction::Return);
-                },
+                }
                 _ => {}
+            }
+            let pair = new_pair;
+            match pair.as_rule() {
+                Rule::COMMENT => {
+                    if last_doc_line != pair.line_col().0 - 1 {
+                        doc = "".to_string();
+                    }
+                    last_doc_line = pair.line_col().0;
+                    doc.push_str(pair.as_str());
+                    doc.push_str("\n");
+                },
+                _ => {
+                    doc = "".to_string();
+                }
             }
         }
         self.instructions.push(Instruction::Return);

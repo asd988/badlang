@@ -23,7 +23,7 @@ instruction = _{ declaration | print | add | sub | mul | div | modulus | max | m
 
 
 
-COMMENT = _{ "#" ~ (!"\n" ~ ANY)* }
+COMMENT = { "#" ~ (!"\n" ~ ANY)* }
 WHITESPACE = _{ " "+ }
 
 init = _{ SOI ~ (instruction? ~ NEWLINE)* ~ instruction? ~ EOI }

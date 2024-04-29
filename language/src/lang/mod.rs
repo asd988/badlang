@@ -65,16 +65,18 @@ pub struct Tag {
     pub tag_type: TagType,
     pub index: usize,
     pub range: Range,
+    pub doc: String
 }
 
 impl Tag {
-    pub fn from_pair(pair: pest::iterators::Pair<Rule>, tag_type: TagType, index: usize) -> (String, Self) {
+    pub fn from_pair(pair: pest::iterators::Pair<Rule>, tag_type: TagType, index: usize, doc: String) -> (String, Self) {
         (
             pair.as_str().to_string(), 
             Tag {
                 tag_type,
                 index,
-                range: get_range_from_span(pair.as_span())
+                range: get_range_from_span(pair.as_span()),
+                doc
             }
         )
     }
