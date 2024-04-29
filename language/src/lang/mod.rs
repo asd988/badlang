@@ -26,6 +26,13 @@ pub struct TagLocation {
     pub definition: usize
 }
 
+impl TagLocation {
+    pub fn get_tag(&self) -> Tag {
+        unsafe {(self.definition as *const Tag).read()}
+    }
+
+}
+
 pub struct Program {
     pub code: CompiledCode,
     variables: HashMap<String, i64>,

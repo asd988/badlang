@@ -1,4 +1,4 @@
-use badlang::{Tag, TagLocation};
+use badlang::TagLocation;
 use dashmap::DashMap;
 use pest::error::LineColLocation;
 use ropey::Rope;
@@ -188,7 +188,7 @@ impl LanguageServer for Backend {
 
     async fn goto_definition(&self, params: GotoDefinitionParams) -> Result<Option<GotoDefinitionResponse>> {
         if let Some(location) = self.get_tag_location(&params.text_document_position_params.text_document.uri, params.text_document_position_params.position) {
-            let a = unsafe {(location.definition as *const Tag).read()}.range;
+            let a = location.get_tag().range;
             Ok(Some(GotoDefinitionResponse::Scalar(Location {
                 uri: params.text_document_position_params.text_document.uri,
                 range: a
