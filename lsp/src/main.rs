@@ -1,4 +1,4 @@
-use badlang::TagLocation;
+use badlang::{Tag, TagLocation};
 use dashmap::DashMap;
 use pest::error::LineColLocation;
 use ropey::Rope;
@@ -187,11 +187,10 @@ impl LanguageServer for Backend {
     }
 
     async fn goto_definition(&self, params: GotoDefinitionParams) -> Result<Option<GotoDefinitionResponse>> {
-        if let Some(location) = self.get_tag_location(&params.text_document_position_params.text_document.uri, params.text_document_position_params.position) {
-            let a = location.get_tag().range;
+        if let Some((_location, def)) = self.get_tag_location(&params.text_document_position_params.text_document.uri, params.text_document_position_params.position) {
             Ok(Some(GotoDefinitionResponse::Scalar(Location {
                 uri: params.text_document_position_params.text_document.uri,
-                range: a
+                range: def.range
             })))
         } else {
             Ok(None)
@@ -199,11 +198,15 @@ impl LanguageServer for Backend {
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
-        if let Some(location) = self.get_tag_location(&params.text_document_position_params.text_document.uri, params.text_document_position_params.position) {
-            Ok(Some(Hover {
-                contents: HoverContents::Scalar(MarkedString::String(format!("{:?}", params))),
-                range: Some(location.this)
-            }))
+        if let Some((location, def)) = self.get_tag_location(&params.text_document_position_params.text_document.uri, params.text_document_position_params.position) {
+            if def.doc != "" {
+                Ok(Some(Hover {
+                    contents: HoverContents::Scalar(MarkedString::String(def.doc)),
+                    range: Some(location.this)
+                }))
+            } else {
+                Ok(None)
+            }
         } else {
             Ok(None)
         }
@@ -216,13 +219,13 @@ fn is_in_range(range: Range, position: Position) -> bool {
 }
 
 impl Backend {
-    fn get_tag_location(&self, uri: &Url, position: Position) -> Option<TagLocation> {
+    fn get_tag_location(&self, uri: &Url, position: Position) -> Option<(TagLocation, Tag)> {
         if let Some(file) = self.files.get(uri) {
             if let Some(code) = &file.code {
                 if let Some(locations) = &code.locations {
                     for loc in locations {
                         if is_in_range(loc.this, position) {
-                            return Some(loc.clone());
+                            return Some((loc.clone(), code.tags.get(&loc.definition).unwrap().clone()));
                         }
                     }
                 }

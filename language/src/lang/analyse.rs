@@ -1,5 +1,3 @@
-use std::ptr;
-
 use super::*;
 
 pub struct AnalyserError {
@@ -34,7 +32,7 @@ impl CompiledCode {
                 } else if let Some(locations) = &mut self.locations {
                     locations.push(TagLocation {
                         this: tag.range,
-                        definition: ptr::addr_of!(self.tags[&tag.name]) as usize
+                        definition: tag.name.to_string()
                     });
                 }
             }

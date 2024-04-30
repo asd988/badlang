@@ -91,12 +91,15 @@ impl CompiledCode {
             let pair = new_pair;
             match pair.as_rule() {
                 Rule::COMMENT => {
-                    if last_doc_line != pair.line_col().0 - 1 {
-                        doc = "".to_string();
+                    if pair.as_str().starts_with("##") {
+                        if last_doc_line != pair.line_col().0 - 1 {
+                            doc = "".to_string();
+                        }
+                        last_doc_line = pair.line_col().0;
+                        doc.push_str(pair.as_str().split_at(2).1);
+                        doc.push_str("\n");
                     }
-                    last_doc_line = pair.line_col().0;
-                    doc.push_str(pair.as_str());
-                    doc.push_str("\n");
+                    
                 },
                 _ => {
                     doc = "".to_string();

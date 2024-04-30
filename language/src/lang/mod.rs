@@ -23,15 +23,9 @@ pub struct CompiledCode {
 #[derive(Clone)]
 pub struct TagLocation {
     pub this: Range,
-    pub definition: usize
+    pub definition: String
 }
 
-impl TagLocation {
-    pub fn get_tag(&self) -> Tag {
-        unsafe {(self.definition as *const Tag).read()}
-    }
-
-}
 
 pub struct Program {
     pub code: CompiledCode,
