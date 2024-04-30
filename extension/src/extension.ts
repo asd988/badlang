@@ -46,6 +46,22 @@ export function activate(context: vscode.ExtensionContext) {
     // For debugging only
     //lspClient.trace = Trace.Verbose;
 
+	vscode.languages.setLanguageConfiguration("badlang", {
+		onEnterRules: [
+			// doc new line
+			{
+				beforeText: /^\s*#{2}.*$/,
+				action: {
+					indentAction: vscode.IndentAction.None,
+					appendText: "## "
+				} 
+			}
+		],
+		comments: {
+			lineComment: "#"
+		}
+	});
+
     //add all disposables here
     client.start();
 }
