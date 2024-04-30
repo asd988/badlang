@@ -72,4 +72,3 @@ LSP
 - [x] hover documentation for tags
 - [x] errors for jumps to undefined tags
 - [x] errors for variables that are never defined
-- [ ] interactions for tag definition as well

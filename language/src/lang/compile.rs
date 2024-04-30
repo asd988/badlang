@@ -76,11 +76,23 @@ impl CompiledCode {
                 Rule::tag => {
                     let tag = pair.into_inner().next().unwrap();
                     let (key, val) = Tag::from_pair(tag, TagType::Normal, self.instructions.len(), doc.clone());
+                    if let Some(locs) = &mut self.locations {
+                        locs.push(TagLocation {
+                            this: val.range,
+                            definition: key.clone()
+                        });
+                    }
                     self.tags.insert(key, val);
                 },
                 Rule::stacked_tag => {
                     let tag = pair.into_inner().next().unwrap();
                     let (key, val) = Tag::from_pair(tag, TagType::Stacked, self.instructions.len(), doc.clone());
+                    if let Some(locs) = &mut self.locations {
+                        locs.push(TagLocation {
+                            this: val.range,
+                            definition: key.clone()
+                        });
+                    }
                     self.tags.insert(key, val);
                 },
                 Rule::r#return => {
