@@ -220,15 +220,12 @@ fn is_in_range(range: Range, position: Position) -> bool {
 
 impl Backend {
     fn get_tag_location(&self, uri: &Url, position: Position) -> Option<(TagLocation, Tag)> {
-        if let Some(file) = self.files.get(uri) {
-            if let Some(code) = &file.code {
-                if let Some(locations) = &code.locations {
-                    for loc in locations {
-                        if is_in_range(loc.this, position) {
-                            return Some((loc.clone(), code.tags.get(&loc.definition).unwrap().clone()));
-                        }
-                    }
-                }
+        let file = self.files.get(uri)?;
+        let code = file.code.as_ref()?;
+        let locations = code.locations.as_ref()?;
+        for loc in locations {
+            if is_in_range(loc.this, position) {
+                return Some((loc.clone(), code.tags.get(&loc.definition)?.clone()));
             }
         }
         None
